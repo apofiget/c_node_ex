@@ -31,8 +31,12 @@ int main(int argc, char **argv) {
   char *atom, *cookie;
   short int idx;
 
-  port = atoi(argv[1]);
-  cookie = argv[2];
+  if (argc == 3)
+    {
+      port = atoi(argv[1]);
+      cookie = argv[2];
+    } else return -1;
+
 
   erl_init(NULL, 0);
 
