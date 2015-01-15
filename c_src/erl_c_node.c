@@ -11,8 +11,8 @@
 #define BUFSIZE 1000
 
 static char *fns[] = {
-    "foo", "bar", "baz", "quax"
-  };
+  "foo", "bar", "baz", "quax"
+};
 
 static int my_listen(int);
 static short int get_fn_idx(char **, char *);
@@ -70,8 +70,8 @@ int main(int argc, char **argv) {
       break;
     case ERL_MSG:
       /*
-         Exepected term: {from_pid(), {fun_name_atom, argument}}}
-       */
+        Exepected term: {from_pid(), {fun_name_atom, argument}}}
+      */
       if (emsg.type == ERL_REG_SEND || emsg.type ==  ERL_SEND) {
 
         fromp = erl_element(1, emsg.msg);
