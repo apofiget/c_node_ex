@@ -1,6 +1,7 @@
 all: compile
 
 compile: get-deps
+	@(if test ! -d "priv"; then mkdir priv ; fi)
 	@rebar compile
 
 get-deps:

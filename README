@@ -12,6 +12,7 @@ in other console:
 cd c_node_ex/priv/
 ./erl_c_node 6543 COOKIE
 
-,then back to Erlang REPL and try call functions foo/0, bar/0 baz/0, quax/0, other/0.
+,where 6543 - port number and COOKIE - Erlang magic cookie.
+Then back to Erlang REPL and try call functions foo/0, bar/0 baz/0, quax/0, other/0.
 
 Author: Andrey Andruschenko <apofiget@gmail.com>
