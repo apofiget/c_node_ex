@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 
   if ((fd = erl_accept(listen, &conn)) == ERL_ERROR)
     erl_err_quit("erl_accept");
-  fprintf(stderr, "erl_c_node: Connected to %s\n\r", conn.nodename);
+  fprintf(stderr, "%s Connected to %s\n\r", argv[0] , conn.nodename);
 
   while (loop) {
 
@@ -60,10 +60,10 @@ int main(int argc, char **argv) {
 
     switch (got) {
     case ERL_TICK:
-      fprintf(stderr, "erl_c_node: tick\n\r");
+      fprintf(stderr, "%s tick\n\r", argv[0]);
       break;
     case ERL_ERROR:
-      fprintf(stderr, "erl_c_node: erl_receive_msg error\n\r");
+      fprintf(stderr, "%s erl_receive_msg error\n\r", argv[0]);
       loop = 0;
       break;
     case ERL_MSG:
@@ -83,14 +83,14 @@ int main(int argc, char **argv) {
         else
           res = "uknown_function";
 
-        fprintf(stderr, "erl_c_node: call %s()\n\r", res);
+        fprintf(stderr, "%s call %s()\n\r", argv[0], res);
 
         if ((resp = erl_format("{cnode, {reply, ~w}}}", erl_mk_atom(res))) != NULL) {
           if(!erl_send(fd, fromp, resp))
-            fprintf(stderr, "erl_c_node: send reply error\n\r");
-          fprintf(stderr, "erl_c_node: send reply ok\n\r");
+            fprintf(stderr, "%s send reply error\n\r", argv[0]);
+          fprintf(stderr, "%s send reply ok\n\r", argv[0]);
         } else
-          fprintf(stderr, "erl_c_node: term format error \n\r");
+          fprintf(stderr, "%s term format error \n\r", argv[0]);
 
         erl_free_term(emsg.from); erl_free_term(emsg.msg);
         erl_free_term(fromp); erl_free_term(tuplep);
@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
       }
       break;
     default:
-      fprintf(stderr, "erl_c_node: something wrong! :(\n\r)");
+      fprintf(stderr, "%s something wrong! :(\n\r", argv[0]);
       loop = 0;
       break;
     }

@@ -5,7 +5,7 @@ How to build:
 git clone https://github.com/apofiget/c_node_ex
 cd c_node_ex/
 make
-make run
+make start
 
 in other console:
 
