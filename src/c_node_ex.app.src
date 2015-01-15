@@ -1,0 +1,12 @@
+{application, c_node_ex,
+ [
+  {description, "C-node example"},
+  {vsn, "0.1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { c_node_ex, []}},
+  {env, []}
+ ]}.
