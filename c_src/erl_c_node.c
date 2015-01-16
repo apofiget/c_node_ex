@@ -52,8 +52,12 @@ int main(int argc, char **argv) {
   if (erl_publish(port) == -1)
     erl_err_quit("erl_publish");
 
-  if ((fd = erl_accept(listen, &conn)) == ERL_ERROR)
-    erl_err_quit("erl_accept");
+  for(;;) {
+
+  while((fd = erl_accept(listen, &conn)) == ERL_ERROR)
+    fprintf(stderr, "%s Connection error\n\r", argv[0]);
+
+
   fprintf(stderr, "%s Connected to %s\n\r", argv[0] , conn.nodename);
 
   while (loop) {
@@ -110,6 +114,8 @@ int main(int argc, char **argv) {
     }
 
   } /* while */
+  loop = 1;
+ }
   return 0;
 }
 

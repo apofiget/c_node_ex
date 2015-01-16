@@ -33,5 +33,5 @@ c_node_call(Fun) ->
                     error_logger:error_msg("Message waiting timeout from ~p",[Node])
             end;
         _ ->
-            io:format("Can't connect to node: ~p",[Node])
+            error_logger:error_msg("Can't connect to node: ~p",[Node])
     end.
