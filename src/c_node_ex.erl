@@ -26,9 +26,11 @@ c_node_call(Fun) ->
             {any, Node} ! {self(),{Fun, some_atom_param}},
             receive
                 {cnode, {reply, Some}} ->
-                    io:format("C-node reply: ~p~n",[Some]);
+                    error_logger:info_msg("C-node reply: ~p~n",[Some]);
                 Any ->
-                    io:format("Unexpected message: ~p~n",[Any])
+                    error_logger:warn_msg("Unexpected message: ~p~n",[Any])
+            after 5000 ->
+                    error_logger:error_msg("Message waiting timeout from ~p",[Node])
             end;
         _ ->
             io:format("Can't connect to node: ~p",[Node])

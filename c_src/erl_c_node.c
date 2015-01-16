@@ -94,9 +94,12 @@ int main(int argc, char **argv) {
         } else
           fprintf(stderr, "%s term format error \n\r", argv[0]);
 
-        erl_free_term(emsg.from); erl_free_term(emsg.msg);
-        erl_free_term(fromp); erl_free_term(tuplep);
-        erl_free_term(fnp); erl_free_term(argp);
+        erl_free_term(emsg.from);
+        erl_free_term(emsg.msg);
+        erl_free_term(fromp);
+        erl_free_term(tuplep);
+        erl_free_term(fnp);
+        erl_free_term(argp);
         erl_free_term(resp);
       }
       break;
