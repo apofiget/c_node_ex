@@ -1,4 +1,4 @@
-Erlang C-node example code.
+Erlang multithreaded C-node example code.
 
 How to build:
 

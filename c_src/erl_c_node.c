@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
 
   pthread_t *thread;
   pthread_attr_t *attr;
-  thread_data_t data_t;
+  thread_data_t *data;
   static int tidx = 0;
 
   if (argc == 3)
@@ -45,38 +45,46 @@ int main(int argc, char **argv) {
 
   erl_init(NULL, 0);
 
-
   if (erl_connect_init(1, cookie, 0) == -1)
     erl_err_quit("erl_connect_init");
 
-  /* Make a listen socket */
   if ((listen = my_listen(port)) <= 0)
     erl_err_quit("my_listen");
 
   if (erl_publish(port) == -1)
     erl_err_quit("erl_publish");
 
-  if (pthread_attr_init(attr) != NULL) {
+  if (pthread_attr_init(attr)) {
     fprintf(stderr, "error while init pthread attr struct\n\r");
     return -1;
   }
 
-  if ((pthread_attr_setdetachstate(attr, PTHREAD_CREATE_DETACHED)) != NULL) {
+  if ((pthread_attr_setdetachstate(attr, PTHREAD_CREATE_DETACHED))) {
     fprintf(stderr, "error while set pthread attributes\n\r");
     return -1;
   }
 
   for(;;) {
-    // Change &conn to data_t.conn
+
   while((fd = erl_accept(listen, &conn)) == ERL_ERROR)
     fprintf(stderr, "%s Connection error\n\r", argv[0]);
 
-  data_t.fd = fd;
-  data_t.idx = tidx;
-  data_t.node = conn.nodename;
+  if((data = (thread_data_t *)malloc(sizeof(thread_data_t))) == NULL) {
+    fprintf(stderr, "Memory allocation error!\n\r");
+    return -1;
+  }
+
+  if((data->node = (char *)malloc(strlen(conn.nodename)+1)) == NULL) {
+    fprintf(stderr, "Memory allocation error!\n\r");
+    return -1;
+  }
+
+  data->fd = fd;
+  data->idx = tidx;
+  strcpy(data->node, conn.nodename);
 
   fprintf(stderr, "Try fork pthread...\n\r");
-  if (pthread_create(&thread, attr, message_read_loop, &data_t)) {
+  if (pthread_create(&thread, attr, message_read_loop, data)) {
     fprintf(stderr, "error: pthread_create\n\r");
     return EXIT_FAILURE;
   }
@@ -91,7 +99,7 @@ int my_listen(int port) {
   int on = 1;
 
   if ((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    return (-1);
+    return -1;
 
   setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
@@ -121,7 +129,7 @@ short int get_fn_idx(char **funs, char *pattern) {
 
 void *message_read_loop(void *arg) {
 
-  thread_data_t *data_t = (thread_data_t *)arg;
+  thread_data_t *data = (thread_data_t *)arg;
 
   ErlMessage emsg;                           /* Incoming message */
   unsigned char buf[BUFSIZE];                /* Buffer for incoming message */
@@ -132,18 +140,18 @@ void *message_read_loop(void *arg) {
   short int idx;
   char *atom;
 
-  fprintf(stderr, "[%d] Connection] with node: %s\n\r",data_t->idx, data_t->node);
+  fprintf(stderr, "[%d] Connection] with node: %s\n\r",data->idx, data->node);
 
    while (loop) {
 
-    got = erl_receive_msg(data_t->fd, buf, BUFSIZE, &emsg);
+    got = erl_receive_msg(data->fd, buf, BUFSIZE, &emsg);
 
     switch (got) {
     case ERL_TICK:
-      fprintf(stderr, "[%d] %s tick\n\r",data_t->idx, data_t->node);
+      fprintf(stderr, "[%d] %s tick\n\r",data->idx, data->node);
       break;
     case ERL_ERROR:
-      fprintf(stderr, "[%d] %s erl_receive_msg error\n\r",data_t->idx, data_t->node);
+      fprintf(stderr, "[%d] %s erl_receive_msg error or node down\n\r",data->idx, data->node);
       loop = 0;
       break;
     case ERL_MSG:
@@ -164,11 +172,11 @@ void *message_read_loop(void *arg) {
         else
           call = "uknown_function";
 
-        fprintf(stderr, "[%d] %s call %s()\n\r",data_t->idx, data_t->node, call);
+        fprintf(stderr, "[%d] %s call %s()\n\r",data->idx, data->node, call);
 
         if ((resp = erl_format("{cnode, {reply, ~w}}}", erl_mk_atom(call))) != NULL) {
-          if(!erl_send(data_t->fd, fromp, resp))
-            fprintf(stderr, "[%d] %s send reply error\n\r",data_t->idx, data_t->node);
+          if(!erl_send(data->fd, fromp, resp))
+            fprintf(stderr, "[%d] %s send reply error\n\r",data->idx, data->node);
         } else
           fprintf(stderr, "term format error \n\r");
 
@@ -182,11 +190,13 @@ void *message_read_loop(void *arg) {
       }
       break;
     default:
-      fprintf(stderr, "[%d] %s something wrong! :(\n\r",data_t->idx, data_t->node);
+      fprintf(stderr, "[%d] %s something wrong! :(\n\r",data->idx, data->node);
       loop = 0;
       break;
     }
   } /* while */
-   fprintf(stderr, "[%d] %s pthread stop\n\r",data_t->idx, data_t->node);
+   fprintf(stderr, "[%d] %s pthread stop\n\r",data->idx, data->node);
+   free(data->node);
+   free(data);
    pthread_exit(NULL);
 }
