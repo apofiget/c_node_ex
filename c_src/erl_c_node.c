@@ -11,8 +11,19 @@
 
 #define BUFSIZE 1000
 
-static char *fns[] = {
-    "foo", "bar", "baz", "quax"
+int foo();
+int bar();
+int baz();
+int quax();
+
+const static struct _fnames {
+    const char *name;
+    int (*func)(void);
+} fns[] = {
+    { "foo", foo },
+    { "bar", bar },
+    { "baz", baz },
+    { "quax", quax }
 };
 
 typedef struct _thread_data_t {
@@ -22,7 +33,7 @@ typedef struct _thread_data_t {
 } thread_data_t;
 
 static int my_listen(int);
-static short int get_fn_idx(char **, char *);
+static short int get_fn_idx(char *);
 static void *message_read_loop(void *);
 
 int main(int argc, char **argv) {
@@ -115,14 +126,13 @@ int my_listen(int port) {
     return listen_fd;
 }
 
-short int get_fn_idx(char **funs, char *pattern) {
+short int get_fn_idx(char *pattern) {
     int i = 0;
 
-    while(i < sizeof(funs)) {
-        if (strcmp(*funs, pattern) == 0)
+    while(i < (sizeof(fns) / sizeof(fns[0]))) {
+        if (strcmp(fns[i].name, pattern) == 0)
             return i;
         i++;
-        funs++;
     }
     return -1;
 }
@@ -137,7 +147,7 @@ void *message_read_loop(void *arg) {
     ETERM *fromp, *tuplep, *fnp, *argp, *resp; /* Erlang terms*/
     int loop = 1;                              /* Loop flag*/
     const char *call;
-    short int idx;
+    short int idx, res=0;
     char *atom;
 
     fprintf(stderr, "[%d] Connection] with node: %s\n\r",data->idx, data->node);
@@ -167,18 +177,24 @@ void *message_read_loop(void *arg) {
 
                 atom = ERL_ATOM_PTR(fnp);
 
-                if((idx = get_fn_idx(fns, atom)) >= 0)
-                    call = fns[idx];
-                else
+                if((idx = get_fn_idx(atom)) >= 0) {
+                    call = fns[idx].name;
+                    res = fns[idx].func();
+                }
+                else {
                     call = "uknown_function";
+                    res = 0;
+                }
 
                 fprintf(stderr, "[%d] %s call %s()\n\r",data->idx, data->node, call);
 
-                if ((resp = erl_format("{cnode, {reply, ~w}}}", erl_mk_atom(call))) != NULL) {
+                if ((resp = erl_format("{cnode, {reply, {~w, ~i}}}", erl_mk_atom(call), res)) != NULL) {
                     if(!erl_send(data->fd, fromp, resp))
                         fprintf(stderr, "[%d] %s send reply error\n\r",data->idx, data->node);
-                } else
-                    fprintf(stderr, "term format error \n\r");
+                } else {
+                    fprintf(stderr, "[%d] %s term format error \n\r", data->idx, data->node);
+                    loop = 0;
+                }
 
                 erl_free_term(emsg.from);
                 erl_free_term(emsg.msg);
@@ -195,8 +211,26 @@ void *message_read_loop(void *arg) {
             break;
         }
     } /* while */
-    fprintf(stderr, "[%d] %s pthread stop\n\r",data->idx, data->node);
+    fprintf(stderr, "[%d] %s thread stop\n\r",data->idx, data->node);
     free(data->node);
     free(data);
     pthread_exit(NULL);
+}
+
+/* Callbacks */
+
+int foo() {
+    return 100;
+}
+
+int bar() {
+    return 200;
+}
+
+int baz() {
+    return 300;
+}
+
+int quax() {
+    return 400;
 }
