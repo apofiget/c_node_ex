@@ -11,14 +11,14 @@
 
 #define BUFSIZE 1000
 
-int foo();
-int bar();
-int baz();
-int quax();
+ETERM *foo();
+ETERM *bar();
+ETERM *baz();
+ETERM *quax();
 
 const static struct _fnames {
     const char *name;
-    int (*func)(void);
+    ETERM *(*func)(void);
 } fns[] = {
     { "foo", foo },
     { "bar", bar },
@@ -146,9 +146,9 @@ void *message_read_loop(void *arg) {
     int got;                                   /* Result of receive */
     ETERM *fromp, *tuplep, *fnp, *argp, *resp; /* Erlang terms*/
     int loop = 1;                              /* Loop flag*/
-    const char *call;
-    short int idx, res=0;
-    char *atom;
+    short int idx;
+    ETERM *f_resp;
+    char *atom, *call;
 
     fprintf(stderr, "[%d] Connection] with node: %s\n\r",data->idx, data->node);
 
@@ -179,16 +179,16 @@ void *message_read_loop(void *arg) {
 
                 if((idx = get_fn_idx(atom)) >= 0) {
                     call = fns[idx].name;
-                    res = fns[idx].func();
+                    f_resp = fns[idx].func();
                 }
                 else {
-                    call = "uknown_function";
-                    res = 0;
+                    call = "error";
+                    f_resp = erl_mk_atom("unknown_function");
                 }
 
                 fprintf(stderr, "[%d] %s call %s()\n\r",data->idx, data->node, call);
 
-                if ((resp = erl_format("{cnode, {reply, {~w, ~i}}}", erl_mk_atom(call), res)) != NULL) {
+                if ((resp = erl_format("{cnode, {reply, {~w, ~w}}}", erl_mk_atom(call), f_resp)) != NULL) {
                     if(!erl_send(data->fd, fromp, resp))
                         fprintf(stderr, "[%d] %s send reply error\n\r",data->idx, data->node);
                 } else {
@@ -203,6 +203,7 @@ void *message_read_loop(void *arg) {
                 erl_free_term(fnp);
                 erl_free_term(argp);
                 erl_free_term(resp);
+                erl_free_term(f_resp);
             }
             break;
         default:
@@ -219,18 +220,18 @@ void *message_read_loop(void *arg) {
 
 /* Callbacks */
 
-int foo() {
-    return 100;
+ETERM *foo() {
+    return erl_mk_int(100);
 }
 
-int bar() {
-    return 200;
+ETERM *bar() {
+    return erl_mk_atom("bar_function_returned_atom");
 }
 
-int baz() {
-    return 300;
+ETERM *baz() {
+    return erl_mk_float(3.141592);
 }
 
-int quax() {
-    return 400;
+ETERM *quax() {
+    return erl_mk_estring("test string", sizeof("test string") - 1);
 }
