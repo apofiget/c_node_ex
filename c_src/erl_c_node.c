@@ -43,8 +43,8 @@ int main(int argc, char **argv) {
     ErlConnect conn;                         /* Connection data */
     char *cookie;                            /* Erlang magic cookie */
 
-    pthread_t *thread;
-    pthread_attr_t *attr;
+    pthread_t thread;
+    pthread_attr_t attr;
     thread_data_t *data;
     static int tidx = 0;
 
@@ -65,12 +65,12 @@ int main(int argc, char **argv) {
     if (erl_publish(port) == -1)
         erl_err_quit("erl_publish");
 
-    if (pthread_attr_init(attr)) {
+    if (pthread_attr_init(&attr)) {
         fprintf(stderr, "error while init pthread attr struct\n\r");
         return -1;
     }
 
-    if ((pthread_attr_setdetachstate(attr, PTHREAD_CREATE_DETACHED))) {
+    if ((pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))) {
         fprintf(stderr, "error while set pthread attributes\n\r");
         return -1;
     }
@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
         strcpy(data->node, conn.nodename);
 
         fprintf(stderr, "Try fork pthread...\n\r");
-        if (pthread_create(&thread, attr, message_read_loop, data)) {
+        if (pthread_create(&thread, &attr, message_read_loop, data)) {
             fprintf(stderr, "error: pthread_create\n\r");
             return EXIT_FAILURE;
         }
@@ -233,5 +233,5 @@ ETERM *baz() {
 }
 
 ETERM *quax() {
-    return erl_mk_estring("test string", sizeof("test string") - 1);
+    return erl_mk_estring("test string", strlen("test string"));
 }
